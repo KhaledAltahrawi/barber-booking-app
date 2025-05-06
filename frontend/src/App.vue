@@ -3,18 +3,20 @@
     <img alt="Vue logo" src="./assets/logo.png">
     <HelloWorld/>
     <ServiceList/>
-  </div>
+    <BookingForm/> </div>
 </template>
 
 <script>
 import HelloWorld from './components/HelloWorld.vue';
-import ServiceList from './components/ServiceList.vue'; // Import ServiceList
+import ServiceList from './components/ServiceList.vue';
+import BookingForm from './components/BookingForm.vue'; 
 
 export default {
   name: 'App',
   components: {
     HelloWorld,
-    ServiceList // Registering ServiceList to use it in the template.
+    ServiceList,
+    BookingForm 
   }
 };
 </script>

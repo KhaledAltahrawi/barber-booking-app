@@ -2,18 +2,21 @@
   <div id="app">
     <img alt="Vue logo" src="./assets/logo.png">
     <HelloWorld/>
+    <ServiceList/>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import HelloWorld from './components/HelloWorld.vue';
+import ServiceList from './components/ServiceList.vue'; // Import ServiceList
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    HelloWorld,
+    ServiceList // Registering ServiceList to use it in the template.
   }
-}
+};
 </script>
 
 <style>

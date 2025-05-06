@@ -1,0 +1,74 @@
+<template>
+    <div>
+      <h2>Available Services</h2>
+      <ul>
+        <li v-for="service in services" :key="service.id">
+          {{ service.name }} ({{ service.duration_minutes }} minutes)
+        </li>
+      </ul>
+      <p v-if="loading">Loading services...</p>
+      <p v-if="error">Error loading services: {{ error }}</p>
+    </div>
+  </template>
+  
+  <script>
+  import axios from 'axios';
+  
+  export default {
+    name: 'ServiceList',
+    data() {
+      return {
+        services: [],
+        loading: false,
+        error: null
+      };
+    },
+    mounted() {
+      this.fetchServices();
+    },
+    methods: {
+      async fetchServices() {
+        this.loading = true;
+        this.error = null;
+        try {
+          const response = await axios.get('http://localhost:5000/services');
+          this.services = response.data;
+        } catch (err) {
+          this.error = err.message;
+        } finally {
+          this.loading = false;
+        }
+      }
+    }
+  };
+  </script>
+  
+  <style scoped>
+  h2 {
+    margin-bottom: 10px;
+  }
+  
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  li {
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+  }
+  
+  li:last-child {
+    border-bottom: none;
+  }
+  
+  .loading {
+    font-style: italic;
+    color: #777;
+  }
+  
+  .error {
+    color: red;
+    font-weight: bold;
+  }
+  </style>

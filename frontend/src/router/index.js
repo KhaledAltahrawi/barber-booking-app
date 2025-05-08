@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 import BarberLogin from "../components/BarberLogin.vue";
 import HelloWorld from "../components/HelloWorld.vue";
+import BarberDashboard from "../components/BarberDashboard.vue";
+
 const routes = [
   {
     path: "/",
@@ -11,6 +13,11 @@ const routes = [
     path: "/barber/login",
     name: "BarberLogin",
     component: BarberLogin,
+  },
+  {
+    path: "/barber/dashboard",
+    name: "BarberDashboard",
+    component: BarberDashboard,
   },
 ];
 

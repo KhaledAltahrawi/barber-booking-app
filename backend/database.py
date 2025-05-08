@@ -1,81 +1,42 @@
 import sqlite3
+from flask import Flask, g
 
 DATABASE = 'barber_appointments.db'
+app = Flask(__name__)
 
 def get_db():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sqlite3.connect(DATABASE)
+        db.row_factory = sqlite3.Row
+    return db
 
 def init_db():
-    conn = get_db()
-    cursor = conn.cursor()
+    with app.app_context():
+        db = get_db()
+        with app.open_resource('schema.sql', mode='r') as f:
+            db.executescript(f.read())
+        insert_initial_data(db)
 
-    # Create barbers table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS barbers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
-        )
-    ''')
-
-    # Create customers table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS customers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            phone_number TEXT NOT NULL UNIQUE
-        )
-    ''')
-
-    # Create services table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS services (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            duration_minutes INTEGER NOT NULL
-        )
-    ''')
-
-    # Create available_slots table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS available_slots (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            barber_id INTEGER NOT NULL,
-            day TEXT NOT NULL,
-            start_time TEXT NOT NULL,
-            end_time TEXT NOT NULL,
-            FOREIGN KEY (barber_id) REFERENCES barbers(id)
-        )
-    ''')
-
-    cursor.execute('''
-         CREATE TABLE IF NOT EXISTS appointments (
-         id INTEGER PRIMARY KEY AUTOINCREMENT,
-         customer_id INTEGER NOT NULL,
-         service_id INTEGER NOT NULL,
-         appointment_datetime DATETIME NOT NULL,
-         status TEXT NOT NULL DEFAULT 'pending', 
-         FOREIGN KEY (customer_id) REFERENCES customers(id),
-         FOREIGN KEY (service_id) REFERENCES services(id)
-         )
-         ''')
-
-    # Insert initial services
+def insert_initial_data(db):
+    cursor = db.cursor()
     services = [
         ('Beard Trim', 30),
         ('Haircut', 30),
         ('Haircut & Beard Trim', 60)
     ]
     cursor.executemany("INSERT OR IGNORE INTO services (name, duration_minutes) VALUES (?, ?)", services)
-
-    # Insert a default barber
     cursor.execute("INSERT OR IGNORE INTO barbers (username, password) VALUES (?, ?)", ('test_barber', 'password123'))
+    db.commit()
 
-    conn.commit()
-    conn.close()
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
 
 if __name__ == '__main__':
-    init_db()
+    app.config['DATABASE'] = DATABASE
+    with app.app_context():
+        init_db()
     print("Database initialized successfully with initial data!")

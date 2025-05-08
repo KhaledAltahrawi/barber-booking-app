@@ -113,13 +113,14 @@ def get_appointments():
     return jsonify([dict(row) for row in appointments])
 
 @app.route('/appointments/<int:appointment_id>', methods=['PUT'])
+@app.route('/appointments/<int:appointment_id>', methods=['PUT'])
 def update_appointment_status(appointment_id):
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Invalid JSON'}), 400
 
     status = data.get('status')
-    cancellation_reason = data.get('cancellation_reason')
+    cancellation_reason = data.get('cancellation_reason') # Get cancellation reason
 
     if not status:
         return jsonify({'error': 'Missing status'}), 400
@@ -128,12 +129,12 @@ def update_appointment_status(appointment_id):
     cursor = db.cursor()
     try:
         if status == 'cancelled':
-            cursor.execute("UPDATE appointments SET status = ?, cancellation_reason = ? WHERE id = ?", (status, cancellation_reason, appointment_id))
+            cursor.execute("UPDATE appointments SET status = ?, cancellation_reason = ? WHERE id = ?", (status, cancellation_reason, appointment_id)) #update with reason
         else:
             cursor.execute("UPDATE appointments SET status = ? WHERE id = ?", (status, appointment_id))
         db.commit()
         if cursor.rowcount > 0:
-            # Future: Send SMS notification to the customer based on the new status
+            # In a real application, you might want to send an SMS notification to the customer here
             return jsonify({'message': f'Appointment status updated to {status}'}), 200
         else:
             return jsonify({'error': 'Appointment not found'}), 404

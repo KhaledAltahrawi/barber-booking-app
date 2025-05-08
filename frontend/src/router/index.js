@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import BarberLogin from "../components/BarberLogin.vue";
 import HelloWorld from "../components/HelloWorld.vue";
 import BarberDashboard from "../components/BarberDashboard.vue";
+import BarberCancelAppointment from "../components/BarberCancelAppointment.vue"; // Import the new component
 
 const routes = [
   {
@@ -18,6 +19,11 @@ const routes = [
     path: "/barber/dashboard",
     name: "BarberDashboard",
     component: BarberDashboard,
+  },
+  {
+    path: "/barber/cancel-appointment/:id",
+    name: "BarberCancelAppointment",
+    component: BarberCancelAppointment,
   },
 ];
 

@@ -50,13 +50,26 @@ export default {
       }
     };
 
-    const confirmAppointment = (id) => {
-      console.log("Confirming appointment:", id);
+    const confirmAppointment = async (id) => {
+      try {
+        const response = await axios.put(
+          `http://localhost:5000/appointments/${id}`,
+          {
+            status: "confirmed",
+          }
+        );
+        console.log(response.data.message); // Log the response message
+        // Remove the appointment from the list after successful confirmation
+        appointments.value = appointments.value.filter(
+          (appointment) => appointment.id !== id
+        );
+      } catch (err) {
+        error.value = err.message;
+        console.error("Error confirming appointment:", err);
+      }
     };
 
     const cancelAppointment = (id) => {
-      console.log("Cancelling appointment:", id);
-
       router.push(`/barber/cancel-appointment/${id}`);
     };
 
@@ -76,6 +89,7 @@ export default {
 </script>
 
 <style scoped>
+/* Basic styling for the dashboard */
 ul {
   list-style-type: none;
   padding: 0;

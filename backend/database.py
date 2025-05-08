@@ -51,16 +51,16 @@ def init_db():
     ''')
 
     cursor.execute('''
-                CREATE TABLE IF NOT EXISTS appointments (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    customer_id INTEGER NOT NULL,
-                    service_id INTEGER NOT NULL,
-                    appointment_datetime DATETIME NOT NULL,
-                    status TEXT NOT NULL DEFAULT 'pending',  -- إضافة هذا العمود
-                    FOREIGN KEY (customer_id) REFERENCES customers(id),
-                    FOREIGN KEY (service_id) REFERENCES services(id)
-                )
-            ''')
+         CREATE TABLE IF NOT EXISTS appointments (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         customer_id INTEGER NOT NULL,
+         service_id INTEGER NOT NULL,
+         appointment_datetime DATETIME NOT NULL,
+         status TEXT NOT NULL DEFAULT 'pending', 
+         FOREIGN KEY (customer_id) REFERENCES customers(id),
+         FOREIGN KEY (service_id) REFERENCES services(id)
+         )
+         ''')
 
     # Insert initial services
     services = [

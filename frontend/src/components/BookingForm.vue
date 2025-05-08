@@ -147,14 +147,20 @@ export default {
             "http://localhost:5000/appointments",
             this.formData
           );
-          this.message = response.data.message;
-          this.isSuccess = true;
-          this.formData = {
-            customer_name: "",
-            phone_number: "",
-            service_id: "",
-            appointment_datetime: "",
-          };
+
+          if (response.status === 201) {
+            this.message = response.data.message;
+            this.isSuccess = true;
+            this.formData = {
+              customer_name: "",
+              phone_number: "",
+              service_id: "",
+              appointment_datetime: "",
+            }; // Reset the form
+          } else {
+            this.message = "Failed to book appointment.";
+            this.isSuccess = false;
+          }
         } catch (error) {
           console.error(
             "Error booking appointment:",
@@ -170,7 +176,6 @@ export default {
   },
 };
 </script>
-
 <style scoped>
 form {
   display: flex;

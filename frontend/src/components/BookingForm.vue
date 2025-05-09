@@ -1,70 +1,55 @@
 <template>
-  <div>
-    <h2>Book an Appointment</h2>
-    <form @submit.prevent="submitForm">
-      <div>
-        <label for="customer_name">Name:</label>
+  <div class="booking-form">
+    <h2>Book Appointment</h2>
+    <form @submit.prevent="handleSubmit">
+      <!-- Customer Info -->
+      <div class="form-group">
+        <label>Full Name:</label>
+        <input v-model="form.name" required />
+      </div>
+
+      <div class="form-group">
+        <label>Phone Number:</label>
         <input
-          type="text"
-          id="customer_name"
-          v-model="formData.customer_name"
-          @input="errors.customer_name = ''"
+          v-model="form.phone"
+          pattern="[0-9]{10}"
+          placeholder="1234567890"
           required
         />
-        <div v-if="errors.customer_name" class="error-message">
-          {{ errors.customer_name }}
-        </div>
       </div>
-      <div>
-        <label for="phone_number">Phone Number:</label>
-        <input
-          type="tel"
-          id="phone_number"
-          v-model="formData.phone_number"
-          @input="errors.phone_number = ''"
-          required
-        />
-        <div v-if="errors.phone_number" class="error-message">
-          {{ errors.phone_number }}
-        </div>
-      </div>
-      <div>
-        <label for="service_id">Service:</label>
-        <select id="service_id" v-model="formData.service_id" required>
-          <option value="" disabled selected>Select a service</option>
+
+      <!-- Service Selection -->
+      <div class="form-group">
+        <label>Service:</label>
+        <select v-model="form.serviceId" required>
+          <option disabled value="">Select a service</option>
           <option
             v-for="service in services"
             :key="service.id"
             :value="service.id"
           >
-            {{ service.name }} ({{ service.duration_minutes }} minutes)
+            {{ service.name }} ({{ service.duration_minutes }} mins)
           </option>
         </select>
       </div>
-      <div>
-        <label for="appointment_datetime">Date and Time:</label>
+
+      <!-- Date/Time (Temporary - TODO: Replace with slot picker) -->
+      <div class="form-group">
+        <label>Appointment Time:</label>
         <input
           type="datetime-local"
-          id="appointment_datetime"
-          v-model="formData.appointment_datetime"
-          @input="errors.appointment_datetime = ''"
+          v-model="form.datetime"
+          :min="minDateTime()"
           required
         />
-        <div class="instructions">
-          Please select the date and time. A calendar pop-up may appear on your
-          mobile device.
-        </div>
-        <div v-if="errors.appointment_datetime" class="error-message">
-          {{ errors.appointment_datetime }}
-        </div>
       </div>
-      <button
-        type="submit"
-        :disabled="Object.keys(errors).some((key) => errors[key])"
-      >
-        Book Appointment
+
+      <button type="submit" :disabled="loading">
+        {{ loading ? "Booking..." : "Confirm Booking" }}
       </button>
-      <div v-if="message" :class="{ success: isSuccess, error: !isSuccess }">
+
+      <!-- Status Message -->
+      <div v-if="message" :class="['alert', messageType]">
         {{ message }}
       </div>
     </form>
@@ -72,120 +57,92 @@
 </template>
 
 <script>
-import axios from "axios";
-
 export default {
-  name: "BookingForm",
-  props: {
-    services: {
-      type: Array,
-      required: true,
-    },
-  },
   data() {
     return {
-      formData: {
-        customer_name: "",
-        phone_number: "",
-        service_id: "",
-        appointment_datetime: "",
+      services: [],
+      form: {
+        name: "",
+        phone: "",
+        serviceId: "",
+        datetime: "",
       },
-      errors: {
-        customer_name: "",
-        phone_number: "",
-        appointment_datetime: "",
-      },
-      message: null,
-      isSuccess: false,
+      loading: false,
+      message: "",
+      messageType: "",
     };
   },
+  async created() {
+    // Load services
+    try {
+      const response = await fetch("http://localhost:5000/services");
+      this.services = await response.json();
+    } catch (error) {
+      this.showMessage("Failed to load services", "error");
+    }
+  },
   methods: {
-    async submitForm() {
-      this.message = null;
-      this.isSuccess = false;
-      this.errors = {
-        customer_name: "",
-        phone_number: "",
-        appointment_datetime: "",
+    minDateTime() {
+      // Set minimum datetime to current time
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 30); // Buffer time
+      return now.toISOString().slice(0, 16);
+    },
+    async handleSubmit() {
+      this.loading = true;
+      this.message = "";
+
+      try {
+        // Format datetime for backend
+        const formattedDateTime = this.form.datetime.replace("T", " ") + ":00";
+
+        const response = await fetch("http://localhost:5000/appointments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customer_name: this.form.name,
+            phone_number: this.form.phone,
+            service_id: this.form.serviceId,
+            appointment_datetime: formattedDateTime,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Booking failed");
+
+        this.showMessage("Booking successful!", "success");
+        this.resetForm();
+      } catch (error) {
+        this.showMessage(error.message, "error");
+      } finally {
+        this.loading = false;
+      }
+    },
+    resetForm() {
+      this.form = {
+        name: "",
+        phone: "",
+        serviceId: "",
+        datetime: "",
       };
-
-      let isValid = true;
-
-      if (!this.formData.customer_name.trim()) {
-        this.errors.customer_name = "Name is required.";
-        isValid = false;
-      } else if (!/^[a-zA-Z\s]+$/.test(this.formData.customer_name)) {
-        this.errors.customer_name =
-          "Name must contain only letters, spaces allowed for full name.";
-        isValid = false;
-      }
-
-      if (!this.formData.phone_number.trim()) {
-        this.errors.phone_number = "Phone number is required.";
-        isValid = false;
-      } else if (!/^\d{10}$/.test(this.formData.phone_number)) {
-        this.errors.phone_number = "Phone number must be 10 digits.";
-        isValid = false;
-      }
-
-      if (!this.formData.appointment_datetime) {
-        this.errors.appointment_datetime = "Date and time are required.";
-        isValid = false;
-      } else {
-        const selectedDateTime = new Date(this.formData.appointment_datetime);
-        const now = new Date();
-        if (selectedDateTime <= now) {
-          this.errors.appointment_datetime =
-            "Appointment time cannot be in the past.";
-          isValid = false;
-        }
-      }
-
-      if (isValid) {
-        try {
-          const response = await axios.post(
-            "http://localhost:5000/appointments",
-            this.formData
-          );
-
-          if (response.status === 201) {
-            this.message = response.data.message;
-            this.isSuccess = true;
-            this.formData = {
-              customer_name: "",
-              phone_number: "",
-              service_id: "",
-              appointment_datetime: "",
-            }; // Reset the form
-          } else {
-            this.message = "Failed to book appointment.";
-            this.isSuccess = false;
-          }
-        } catch (error) {
-          console.error(
-            "Error booking appointment:",
-            error.response ? error.response.data : error.message
-          );
-          this.message = error.response
-            ? error.response.data.error
-            : "Failed to book appointment.";
-          this.isSuccess = false;
-        }
-      }
+    },
+    showMessage(text, type) {
+      this.message = text;
+      this.messageType = type;
     },
   },
 };
 </script>
+
 <style scoped>
-form {
-  display: flex;
-  flex-direction: column;
-  max-width: 300px;
-  margin-top: 20px;
+.booking-form {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
-div {
-  margin-bottom: 10px;
+.form-group {
+  margin-bottom: 15px;
 }
 
 label {
@@ -193,49 +150,40 @@ label {
   margin-bottom: 5px;
 }
 
-input[type="text"],
-input[type="tel"],
-input[type="datetime-local"],
+input,
 select {
   width: 100%;
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  box-sizing: border-box;
 }
 
-button[type="submit"] {
-  padding: 10px 15px;
-  background-color: #007bff;
+button {
+  background: #42b983;
   color: white;
+  padding: 10px 15px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
-button[type="submit"]:hover {
-  background-color: #0056b3;
+button:disabled {
+  background: #ccc;
 }
 
-.success {
-  color: green;
-  margin-top: 10px;
+.alert {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 4px;
 }
 
 .error {
-  color: red;
-  margin-top: 10px;
+  background: #ffebee;
+  color: #f44336;
 }
 
-.error-message {
-  color: red;
-  font-size: 0.8em;
-  margin-top: 5px;
-}
-
-.instructions {
-  font-size: 0.8em;
-  color: #777;
-  margin-top: 5px;
+.success {
+  background: #e8f5e9;
+  color: #4caf50;
 }
 </style>

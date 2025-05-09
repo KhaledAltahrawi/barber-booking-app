@@ -1,29 +1,21 @@
 import { createRouter, createWebHistory } from "vue-router";
+import BookingForm from "../components/BookingForm.vue";
 import BarberLogin from "../components/BarberLogin.vue";
-import HelloWorld from "../components/HelloWorld.vue";
-import BarberDashboard from "../components/BarberDashboard.vue";
-import BarberCancelAppointment from "../components/BarberCancelAppointment.vue"; // Import the new component
 
 const routes = [
   {
     path: "/",
-    name: "Home",
-    component: HelloWorld,
+    redirect: "/book", // Redirect root to booking
+  },
+  {
+    path: "/book",
+    name: "Booking",
+    component: BookingForm,
   },
   {
     path: "/barber/login",
     name: "BarberLogin",
     component: BarberLogin,
-  },
-  {
-    path: "/barber/dashboard",
-    name: "BarberDashboard",
-    component: BarberDashboard,
-  },
-  {
-    path: "/barber/cancel-appointment/:id",
-    name: "BarberCancelAppointment",
-    component: BarberCancelAppointment,
   },
 ];
 

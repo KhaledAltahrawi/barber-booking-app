@@ -3,6 +3,8 @@ from database import get_db
 from flask_cors import CORS
 import sqlite3
 from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 app = Flask(__name__)
 CORS(app)
@@ -18,6 +20,39 @@ def get_services():
     db.close()
     return jsonify([dict(row) for row in services])
 
+@app.route('/barber/login', methods=['POST'])
+def barber_login():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON'}), 400
+
+    username = data.get('username')
+    password = data.get('password')
+
+    if not username or not password:
+        return jsonify({'error': 'Missing credentials'}), 400
+
+    db = get_db()
+    cursor = db.cursor()
+    
+    try:
+        cursor.execute("SELECT id, password FROM barbers WHERE username = ?", (username,))
+        barber = cursor.fetchone()
+        
+        if barber and check_password_hash(barber['password'], password):
+            return jsonify({
+                'message': 'Login successful',
+                'barber_id': barber['id'],
+                'token': 'sample_jwt_token'  # In production, use proper JWT
+            }), 200
+        else:
+            return jsonify({'error': 'Invalid credentials'}), 401
+            
+    except sqlite3.Error as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        db.close()
+        
 @app.route('/appointments', methods=['POST'])
 def create_appointment():
     """Create new appointment with conflict check"""
@@ -66,6 +101,9 @@ def create_appointment():
         return jsonify({'error': str(e)}), 500
     finally:
         db.close()
+
+        
+        
 
 # TODO: Add routes for:
 # - Barber login

@@ -1,19 +1,24 @@
 <template>
-  <div>
+  <div class="login-container">
     <h2>Barber Login</h2>
-    <form @submit.prevent="login">
-      <div>
+    <form @submit.prevent="handleLogin">
+      <div class="form-group">
         <label for="username">Username:</label>
-        <input type="text" id="username" v-model="username" required />
+        <input id="username" v-model="form.username" type="text" required />
       </div>
-      <div>
+
+      <div class="form-group">
         <label for="password">Password:</label>
-        <input type="password" id="password" v-model="password" required />
+        <input id="password" v-model="form.password" type="password" required />
       </div>
+
       <button type="submit" :disabled="loading">
         {{ loading ? "Logging in..." : "Login" }}
       </button>
-      <div v-if="error" class="error-message">{{ error }}</div>
+
+      <div v-if="error" class="error-message">
+        {{ error }}
+      </div>
     </form>
   </div>
 </template>
@@ -25,32 +30,32 @@ export default {
   name: "BarberLogin",
   data() {
     return {
-      username: "",
-      password: "",
+      form: {
+        username: "",
+        password: "",
+      },
       loading: false,
-      error: null,
+      error: "",
     };
   },
   methods: {
-    async login() {
+    async handleLogin() {
       this.loading = true;
-      this.error = null;
+      this.error = "";
+
       try {
-        const response = await axios.post("http://localhost:5000/login", {
-          username: this.username,
-          password: this.password,
-        });
-        // Future: Store login information (e.g., token) and redirect the barber to their dashboard
-        console.log("Login successful:", response.data);
-        this.$router.push("/barber/dashboard"); // Temporary redirection
-      } catch (error) {
-        console.error(
-          "Login failed:",
-          error.response ? error.response.data : error.message
+        const response = await axios.post(
+          "http://localhost:5000/barber/login",
+          this.form
         );
-        this.error = error.response
-          ? error.response.data.error
-          : "Login failed.";
+
+        localStorage.setItem("barber_token", response.data.token);
+        localStorage.setItem("barber_id", response.data.barber_id);
+
+        this.$router.push("/barber/dashboard");
+      } catch (err) {
+        this.error = err.response?.data?.error || "Login failed";
+        console.error("Login error:", err);
       } finally {
         this.loading = false;
       }
@@ -60,54 +65,45 @@ export default {
 </script>
 
 <style scoped>
-form {
-  display: flex;
-  flex-direction: column;
-  max-width: 300px;
-  margin: 20px auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+.login-container {
+  max-width: 400px;
+  margin: 2rem auto;
+  padding: 2rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
 }
 
-div {
-  margin-bottom: 10px;
+.form-group {
+  margin-bottom: 1rem;
 }
 
 label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 0.5rem;
 }
 
-input[type="text"],
-input[type="password"] {
+input {
   width: 100%;
-  padding: 8px;
+  padding: 0.5rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  box-sizing: border-box;
 }
 
-button[type="submit"] {
-  padding: 10px 15px;
-  background-color: #007bff;
+button {
+  padding: 0.5rem 1rem;
+  background-color: #42b983;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
-button[type="submit"]:hover {
-  background-color: #0056b3;
-}
-
-button[type="submit"]:disabled {
+button:disabled {
   background-color: #ccc;
-  cursor: not-allowed;
 }
 
 .error-message {
-  color: red;
-  margin-top: 10px;
+  margin-top: 1rem;
+  color: #ff4444;
 }
 </style>

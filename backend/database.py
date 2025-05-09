@@ -1,8 +1,8 @@
 import sqlite3
-from flask import Flask, g
+from werkzeug.security import generate_password_hash
+from flask import g
 
 DATABASE = 'barber_appointments.db'
-app = Flask(__name__)
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -15,28 +15,32 @@ def init_db():
     with app.app_context():
         db = get_db()
         with app.open_resource('schema.sql', mode='r') as f:
-            db.executescript(f.read())
-        insert_initial_data(db)
+            db.cursor().executescript(f.read())
+        db.commit()
+        seed_initial_data(db)
 
-def insert_initial_data(db):
+def seed_initial_data(db):
     cursor = db.cursor()
-    services = [
-        ('Beard Trim', 30),
-        ('Haircut', 30),
-        ('Haircut & Beard Trim', 60)
-    ]
-    cursor.executemany("INSERT OR IGNORE INTO services (name, duration_minutes) VALUES (?, ?)", services)
-    cursor.execute("INSERT OR IGNORE INTO barbers (username, password) VALUES (?, ?)", ('test_barber', 'password123'))
+    # Barber with hashed password
+    cursor.execute(
+        "INSERT INTO barbers (username, password) VALUES (?, ?)",
+        ('admin', generate_password_hash('temp_password'))
+    )
+    # Services
+    cursor.executemany(
+        "INSERT INTO services (name, duration_minutes) VALUES (?, ?)",
+        [
+            ('Haircut', 30),
+            ('Beard Trim', 30),
+            ('Haircut & Beard Combo', 60)
+        ]
+    )
     db.commit()
 
-@app.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
-
 if __name__ == '__main__':
-    app.config['DATABASE'] = DATABASE
-    with app.app_context():
-        init_db()
-    print("Database initialized successfully with initial data!")
+    from flask import Flask
+    app = Flask(__name__)
+    init_db()
+    print("Database initialized with:")
+    print("- Admin user: admin/temp_password")
+    print("- 3 services")
